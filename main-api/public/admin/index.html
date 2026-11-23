@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astromi - Analiz ve İstatistik Paneli</title>
+    <style>
+        :root {
+            --primary: #9b51e0;
+            --primary-dark: #7a3ca1;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 1rem; text-align: center; }
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #d8b4fe, #9b51e0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #e2e8f0;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* GRID LAYOUT FOR CAMPAIGNS */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .campaign-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .campaign-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .card-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .card-body-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-dot.sent { background-color: var(--success); }
+        .status-dot.pending { background-color: var(--warning); }
+        .status-dot.failed { background-color: var(--danger); }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        /* BUTTONS */
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        button:hover { background-color: var(--primary-dark); }
+        button:active { transform: scale(0.98); }
+
+        /* MODAL YAPI */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-btn:hover { color: white; }
+
+        /* STATS GRID */
+        .stats-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .stat-box {
+            background-color: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .stat-box .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.2rem;
+        }
+        .stat-box .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* FORM INSIDE MODAL */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #cbd5e1; font-size: 0.9rem; }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            background-color: rgba(155, 81, 224, 0.2);
+            color: #d8b4fe;
+            display: inline-block;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background-color: var(--success);
+            color: white;
+            border-radius: 8px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background-color: var(--danger); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>Astromi Analiz Paneli</h1>
+            <p style="color: var(--text-muted);">Sistem Otomatik Bildirim İstatistikleri</p>
+        </div>
+        <div>
+            <button onclick="document.getElementById('createModal').classList.add('active')">+ Yeni Kampanya</button>
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <!-- İstatistik Bölümü: Gönderilenler -->
+        <div class="section">
+            <h2 class="section-title">📊 Gönderilmiş Kampanyalar</h2>
+            <div id="sentGrid" class="cards-grid">
+                <div style="color:var(--text-muted);">Yükleniyor...</div>
+            </div>
+        </div>
+
+        <!-- İstatistik Bölümü: Bekleyenler -->
+        <div class="section">
+            <h2 class="section-title">⏳ Bekleyen (Zamanlanmış) Kampanyalar</h2>
+            <div id="pendingGrid" class="cards-grid">
+                <div style="color:var(--text-muted);">Yükleniyor...</div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- 1. KAMPANYA DETAYLARI / İSTATİSTİKLER MODALI -->
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('statsModal')">&times;</span>
+            <div style="margin-bottom: 1.5rem;">
+                <span class="badge" id="mBadgeStatus">SENT</span>
+                <span class="badge" id="mBadgeTime" style="background:#334155; color:#cbd5e1; margin-left:8px;">Tarih</span>
+            </div>
+            <h2 id="mTitle" style="font-size: 1.75rem; margin-bottom: 0.5rem;">Kampanya Başlığı</h2>
+            <p id="mBody" style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Mesaj içeriği burada yer alacak.</p>
+            
+            <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border);">
+                <div style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;"><strong>🎯 Hedef Kitle:</strong></div>
+                <div style="display: flex; gap: 15px; font-size: 0.85rem; color: var(--text-muted);">
+                    <div>Cinsiyet: <strong id="mGender" style="color:white;">Tümü</strong></div>
+                    <div>Burç: <strong id="mZodiac" style="color:white;">Tümü</strong></div>
+                    <div>Yaş: <strong id="mAgeRange" style="color:white;">Tümü</strong></div>
+                </div>
+            </div>
+
+            <div class="stats-details" id="statsNumbersGrid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="stat-box">
+                    <div class="value" id="mSentCount">0</div>
+                    <div class="label">Hedeflenen Kişi</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px; color: #94a3b8;">
+                        <span style="color: #10b981;">Başarılı: <span id="mSuccessCount">0</span></span> | 
+                        <span style="color: #ef4444;">Hatalı: <span id="mFailureCount">0</span></span>
+                    </div>
+                </div>
+                <div class="stat-box" style="border-color: #3b82f6;">
+                    <div class="value" id="mDuration" style="color: #3b82f6;">0s</div>
+                    <div class="label">Toplam Süre</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px; color: #e2e8f0;">
+                        RabbitMQ: <span id="mRabbitmqDur" style="color: #fbbf24;">0s</span> | 
+                        FCM: <span id="mFcmDur" style="color: #a78bfa;">0s</span>
+                    </div>
+                    <div style="font-size: 0.8rem; margin-top: 5px; color: #e2e8f0;">
+                        Hız: <strong id="mThroughput" style="color: #60a5fa;">0 msg/sn</strong>
+                    </div>
+                </div>
+                <div class="stat-box" style="border-color: var(--success); grid-column: 1 / -1;">
+                    <div class="value" id="mClickCount" style="color: var(--success);">0</div>
+                    <div class="label">Toplam Tıklama</div>
+                </div>
+                <div class="stat-box" style="border-color: #ef4444; grid-column: 1 / -1; display: none;" id="mFailureBox">
+                    <div class="label" style="color:#ef4444; margin-bottom: 5px;">Hata Nedenleri Dağılımı</div>
+                    <div id="mFailureReasons" style="font-size: 0.8rem; color: #cbd5e1; text-align: left; max-height: 80px; overflow-y: auto;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KAMPANYA OLUŞTURMA MODALI -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('createModal')">&times;</span>
+            <h2 style="margin-bottom: 1.5rem; color: white;">Yeni Kampanya Başlat</h2>
+            <form id="campaignForm">
+                <div class="form-group">
+                    <label>Bildirim Başlığı</label>
+                    <input type="text" id="campTitle" required placeholder="Örn: 🌟 Kozmik İndirim!">
+                </div>
+                <div class="form-group">
+                    <label>Bildirim İçeriği</label>
+                    <textarea id="campBody" rows="3" required placeholder="Mesajınız..."></textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 1.5rem;">
+                    <div>
+                        <label style="color:#cbd5e1; font-size:0.9rem; margin-bottom:5px; display:block;">Burç Hedefleme</label>
+                        <select id="campZodiac">
+                            <option value="all">Tüm Burçlar</option>
+                            <option value="Koç">Koç (Aries)</option>
+                            <option value="Boğa">Boğa (Taurus)</option>
+                            <option value="İkizler">İkizler (Gemini)</option>
+                            <option value="Yengeç">Yengeç (Cancer)</option>
+                            <option value="Aslan">Aslan (Leo)</option>
+                            <option value="Başak">Başak (Virgo)</option>
+                            <option value="Terazi">Terazi (Libra)</option>
+                            <option value="Akrep">Akrep (Scorpio)</option>
+                            <option value="Yay">Yay (Sagittarius)</option>
+                            <option value="Oğlak">Oğlak (Capricorn)</option>
+                            <option value="Kova">Kova (Aquarius)</option>
+                            <option value="Balık">Balık (Pisces)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:#cbd5e1; font-size:0.9rem; margin-bottom:5px; display:block;">Cinsiyet</label>
+                        <select id="campGender">
+                            <option value="all">Tümü</option>
+                            <option value="female">Kadın</option>
+                            <option value="male">Erkek</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:#cbd5e1; font-size:0.9rem; margin-bottom:5px; display:block;">Yaş Aralığı</label>
+                        <select id="campAge">
+                            <option value="all">Tümü</option>
+                            <option value="18-24">18 - 24</option>
+                            <option value="25-34">25 - 34</option>
+                            <option value="35-44">35 - 44</option>
+                            <option value="45-54">45 - 54</option>
+                            <option value="55+">55 ve üstü</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Gönderim Zamanı (İsteğe Bağlı Zamanlama)</label>
+                    <input type="datetime-local" id="campSchedule">
+                    <small style="color: var(--text-muted); display: block; margin-top: 5px;">Boş bırakılırsa hemen gönderilir.</small>
+                </div>
+                
+                <button type="submit" style="width: 100%; margin-top: 2rem;">🚀 Kampanyayı Başlat</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Toast Mesajı</div>
+
+    <script>
+        const API_BASE = '/api/v1/notification';
+        let customDataCache = {}; // Kampanyaları ID'sine göre saklamak için
+
+        // YARDIMCI FONKSİYONLAR
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${isError ? 'error' : ''}`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        function formatDate(dateString) {
+            const opts = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return new Date(dateString).toLocaleDateString('tr-TR', opts);
+        }
+
+        function translateGender(g) {
+            if (g === 'female') return 'Sadece Kadınlar';
+            if (g === 'male') return 'Sadece Erkekler';
+            return 'Tüm Kullanıcılar';
+        }
+
+        // MODAL YÖNETİMİ
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function openStatsModal(id, isScheduled) {
+            const camp = customDataCache[id];
+            if (!camp) return;
+
+            document.getElementById('mTitle').textContent = camp.title;
+            document.getElementById('mBody').textContent = camp.body;
+            document.getElementById('mGender').textContent = translateGender(camp.targetGender);
+            document.getElementById('mZodiac').textContent = camp.targetZodiac === 'all' ? 'Tüm Burçlar' : camp.targetZodiac;
+            document.getElementById('mAgeRange').textContent = camp.targetAgeRange === 'all' ? 'Tümü' : camp.targetAgeRange;
+            
+            const badge = document.getElementById('mBadgeStatus');
+            badge.textContent = camp.status;
+            if (camp.status === 'SENT') { badge.style.backgroundColor = 'rgba(16, 185, 129, 0.2)'; badge.style.color = '#34d399'; }
+            if (camp.status === 'PENDING') { badge.style.backgroundColor = 'rgba(251, 191, 36, 0.2)'; badge.style.color = '#fbbf24'; }
+            if (camp.status === 'FAILED') { badge.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'; badge.style.color = '#f87171'; }
+
+            if (isScheduled) {
+                document.getElementById('mBadgeTime').textContent = "📅 Planlandı: " + formatDate(camp.scheduledFor);
+                document.getElementById('statsNumbersGrid').style.display = 'none'; // Planlanmışın henüz metriği yok
+            } else {
+                document.getElementById('mBadgeTime').textContent = "📅 Gönderildi: " + formatDate(camp.createdAt);
+                document.getElementById('statsNumbersGrid').style.display = 'grid';
+                document.getElementById('mSentCount').textContent = camp.sentCount || 0;
+                document.getElementById('mSuccessCount').textContent = camp.successCount || 0;
+                document.getElementById('mFailureCount').textContent = camp.failureCount || 0;
+                document.getElementById('mClickCount').textContent = camp.clickCount || 0;
+                
+                const seconds = camp.deliveryDurationMs ? (camp.deliveryDurationMs / 1000).toFixed(2) : "0.00";
+                const mqDur = camp.rabbitmqDurationMs ? (camp.rabbitmqDurationMs / 1000).toFixed(2) : "0.00";
+                const fcmDur = camp.fcmDurationMs ? (camp.fcmDurationMs / 1000).toFixed(2) : "0.00";
+
+                document.getElementById('mDuration').textContent = seconds + 's';
+                document.getElementById('mRabbitmqDur').textContent = mqDur + 's';
+                document.getElementById('mFcmDur').textContent = fcmDur + 's';
+
+                if (camp.failureReasons && Object.keys(camp.failureReasons).length > 0) {
+                    document.getElementById('mFailureBox').style.display = 'block';
+                    const reasonsHtml = Object.entries(camp.failureReasons).map(([reason, count]) => {
+                        return `<div style="margin-bottom: 4px;"><strong style="color:#f87171;">${count} adet:</strong> ${reason}</div>`;
+                    }).join('');
+                    document.getElementById('mFailureReasons').innerHTML = reasonsHtml;
+                } else {
+                    document.getElementById('mFailureBox').style.display = 'none';
+                }
+
+                let throughput = "0";
+                if (camp.deliveryDurationMs > 0 && camp.sentCount > 0) {
+                    throughput = (camp.sentCount / (camp.deliveryDurationMs / 1000)).toFixed(1);
+                }
+                document.getElementById('mThroughput').textContent = throughput;
+            }
+
+            document.getElementById('statsModal').classList.add('active');
+        }
+
+        // VERİ ÇEKME VE RENDER
+        async function fetchStats() {
+            try {
+                const res = await fetch(`${API_BASE}/stats`);
+                const data = await res.json();
+                
+                const sentGrid = document.getElementById('sentGrid');
+                const pendingGrid = document.getElementById('pendingGrid');
+                sentGrid.innerHTML = '';
+                pendingGrid.innerHTML = '';
+                customDataCache = {};
+
+                // 1) GÖNDERİLMİŞ KAMPANYALAR (Regular)
+                if (data.campaigns && data.campaigns.length > 0) {
+                    data.campaigns.forEach(camp => {
+                        customDataCache[camp._id] = camp;
+                        const statusClass = camp.status === 'SENT' ? 'sent' : (camp.status === 'FAILED' ? 'failed' : 'pending');
+                        const statusColor = camp.status === 'SENT' ? '#10b981' : (camp.status === 'FAILED' ? '#ef4444' : '#fbbf24');
+                        
+                        // CTR (Click Trough Rate)
+                        let ctr = "0.0";
+                        if (camp.sentCount > 0) ctr = ((camp.clickCount / camp.sentCount) * 100).toFixed(1);
+
+                        sentGrid.innerHTML += `
+                            <div class="campaign-card" onclick="openStatsModal('${camp._id}', false)">
+                                <div class="card-header">
+                                    <div class="card-title">${camp.title}</div>
+                                </div>
+                                <div class="card-body-text">${camp.body}</div>
+                                <div class="card-footer">
+                                    <div style="color: ${statusColor}; font-weight: 500;">
+                                        <span class="status-dot ${statusClass}"></span> ${camp.status}
+                                    </div>
+                                    <div style="color: var(--text-muted);">
+                                        👁️ ${camp.clickCount} (${ctr}%)
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    sentGrid.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">Kayıt bulunamadı.</div>';
+                }
+
+                // 2) BEKLEYEN KAMPANYALAR (Scheduled)
+                if (data.scheduledCampaigns && data.scheduledCampaigns.length > 0) {
+                    data.scheduledCampaigns.forEach(camp => {
+                        customDataCache[camp._id] = camp;
+                        const statusClass = camp.status === 'PENDING' ? 'pending' : 'sent';
+                        const statusColor = camp.status === 'PENDING' ? '#fbbf24' : '#10b981';
+
+                        pendingGrid.innerHTML += `
+                            <div class="campaign-card" style="border-color: #fbbf24; background: rgba(251, 191, 36, 0.03);" onclick="openStatsModal('${camp._id}', true)">
+                                <div class="card-header">
+                                    <div class="card-title">${camp.title}</div>
+                                </div>
+                                <div class="card-body-text">${camp.body}</div>
+                                <div class="card-footer">
+                                    <div style="color: ${statusColor}; font-weight: 500;">
+                                        <span class="status-dot ${statusClass}"></span> ${camp.status}
+                                    </div>
+                                    <div style="color: var(--text-muted); font-size: 0.8rem;">
+                                        ⏰ ${formatDate(camp.scheduledFor)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    pendingGrid.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">Bekleyen zamanlanmış kampanya yok.</div>';
+                }
+
+            } catch (err) {
+                console.error(err);
+                showToast('İstatistikler alınamadı', true);
+            }
+        }
+
+        // KAMPANYA SEND
+        document.getElementById('campaignForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+            btn.textContent = 'Gönderiliyor...';
+            btn.disabled = true;
+
+            const payload = {
+                title: document.getElementById('campTitle').value,
+                body: document.getElementById('campBody').value,
+                targetZodiac: document.getElementById('campZodiac').value,
+                targetGender: document.getElementById('campGender').value,
+                targetAgeRange: document.getElementById('campAge').value,
+                scheduledFor: document.getElementById('campSchedule').value || null
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/campaign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('✅ Kampanya başarıyla başlatıldı!');
+                    document.getElementById('campaignForm').reset();
+                    closeModal('createModal');
+                    fetchStats(); // Hemen güncelle
+                } else {
+                    showToast('❌ Hata: ' + data.message, true);
+                }
+            } catch (err) {
+                showToast('❌ Sunucuya ulaşılamadı', true);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // INIT
+        fetchStats();
+        setInterval(fetchStats, 10000); // 10s auto-refresh
+    </script>
+</body>
+</html>

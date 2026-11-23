@@ -1,0 +1,63 @@
+# ================================
+# Node modülleri (projeye dahil edilmez)
+# ================================
+node_modules/
+
+# ================================
+# Log dosyaları (hata kayıtları)
+# ================================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ================================
+# Ortam değişkenleri (GİZLİ BİLGİLER - KRİTİK)
+# ================================
+# .env ile başlayan tüm dosyaları engeller (.env, .env.test, .env.production vb.)
+.env*
+!.env.example
+
+# ================================
+# JSPM bağımlılık klasörü (kullanıyorsan)
+# ================================
+jspm_packages/
+
+# ================================
+# npm önbellek klasörü (takip edilmez)
+# ================================
+.npm
+
+# ================================
+# ESLint önbelleği
+# ================================
+.eslintcache
+
+# ================================
+# Node REPL geçmiş dosyası
+# ================================
+.node_repl_history
+
+# ================================
+# npm pack çıktıları
+# ================================
+*.tgz
+
+# ================================
+# VS Code ayarları (kişisel ayarlar)
+# ================================
+.vscode/
+
+# ================================
+# Build çıktıları (derleme dosyaları)
+# ================================
+dist/
+build/
+
+# ================================
+# İşletim Sistemi Dosyaları (Gereksizler)
+# ================================
+.DS_Store
+Thumbs.db
